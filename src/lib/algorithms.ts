@@ -378,6 +378,7 @@ export const runRoundRobin = (processes: Process[], timeQuantum: number): Simula
         };
     }
     
+    const ganttChart: GanttChartEntry[] = [];
     const readyQueue: Process[] = [];
     let currentTime = 0;
     let completed = 0;
