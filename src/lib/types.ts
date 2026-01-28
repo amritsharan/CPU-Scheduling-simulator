@@ -9,10 +9,11 @@ export interface Process {
   turnaroundTime?: number;
   waitingTime?: number;
   remainingTime?: number;
+  originalPriority?: number;
 }
 
 export interface GanttChartEntry {
-  processId: number | 'idle';
+  processId: number | 'idle' | 'context-switch';
   processName: string;
   start: number;
   end: number;
@@ -26,4 +27,5 @@ export interface SimulationResult {
   avgWaitingTime: number;
   avgTurnaroundTime: number;
   contextSwitches: number;
+  cpuUtilization: number;
 }

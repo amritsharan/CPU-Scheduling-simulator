@@ -12,3 +12,4 @@ export const PROCESS_COLORS = [
 ];
 
 export const IDLE_COLOR = '#B0A8B9';
+export const CONTEXT_SWITCH_COLOR = '#4B4453';

@@ -17,7 +17,7 @@ interface AiAnalysisProps {
 }
 
 export function AiAnalysis({ results, isEnabled }: AiAnalysisProps) {
-  const [performanceCriteria, setPerformanceCriteria] = useState("a combination of both waiting time and turnaround time");
+  const [performanceCriteria, setPerformanceCriteria] = useState("a combination of all");
   const [suggestion, setSuggestion] = useState<SuggestOptimalAlgorithmOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -63,7 +63,9 @@ export function AiAnalysis({ results, isEnabled }: AiAnalysisProps) {
             <SelectContent>
               <SelectItem value="waiting time">Minimize Waiting Time</SelectItem>
               <SelectItem value="turnaround time">Minimize Turnaround Time</SelectItem>
-              <SelectItem value="a combination of both waiting time and turnaround time">Balanced Performance</SelectItem>
+              <SelectItem value="cpu utilization">Maximize CPU Utilization</SelectItem>
+              <SelectItem value="context switches">Minimize Context Switches</SelectItem>
+              <SelectItem value="a combination of all">Balanced Performance</SelectItem>
             </SelectContent>
           </Select>
           <Button onClick={handleGetSuggestion} disabled={!isEnabled || isLoading} className="w-full sm:w-auto">

@@ -3,6 +3,13 @@
 import { suggestOptimalAlgorithm, SuggestOptimalAlgorithmInput } from "@/ai/flows/suggest-optimal-algorithm";
 import { SimulationResult } from "@/lib/types";
 
+const formatResultForAI = (result: SimulationResult) => ({
+  waitingTime: result.avgWaitingTime,
+  turnaroundTime: result.avgTurnaroundTime,
+  contextSwitches: result.contextSwitches,
+  cpuUtilization: result.cpuUtilization,
+});
+
 export async function getAiSuggestion(
   results: SimulationResult[],
   performanceCriteria: string
@@ -14,24 +21,20 @@ export async function getAiSuggestion(
     const priorityResult = results.find(r => r.algorithm === 'Priority (Non-Preemptive)');
     const priorityPreemptiveResult = results.find(r => r.algorithm === 'Priority (Preemptive)');
     const rrResult = results.find(r => r.algorithm === 'Round Robin');
+    const priorityAgingResult = results.find(r => r.algorithm === 'Priority with Aging (Non-Preemptive)');
 
-    if (!fcfsResult || !sjfResult || !priorityResult || !rrResult || !srtfResult || !priorityPreemptiveResult) {
+    if (!fcfsResult || !sjfResult || !priorityResult || !rrResult || !srtfResult || !priorityPreemptiveResult || !priorityAgingResult) {
       throw new Error("One or more simulation results are missing for AI Analysis.");
     }
     
     const input: SuggestOptimalAlgorithmInput = {
-      fcfsWaitingTime: fcfsResult.avgWaitingTime,
-      fcfsTurnaroundTime: fcfsResult.avgTurnaroundTime,
-      sjfWaitingTime: sjfResult.avgWaitingTime,
-      sjfTurnaroundTime: sjfResult.avgTurnaroundTime,
-      srtfWaitingTime: srtfResult.avgWaitingTime,
-      srtfTurnaroundTime: srtfResult.avgTurnaroundTime,
-      priorityWaitingTime: priorityResult.avgWaitingTime,
-      priorityTurnaroundTime: priorityResult.avgTurnaroundTime,
-      priorityPreemptiveWaitingTime: priorityPreemptiveResult.avgWaitingTime,
-      priorityPreemptiveTurnaroundTime: priorityPreemptiveResult.avgTurnaroundTime,
-      roundRobinWaitingTime: rrResult.avgWaitingTime,
-      roundRobinTurnaroundTime: rrResult.avgTurnaroundTime,
+      fcfs: formatResultForAI(fcfsResult),
+      sjf: formatResultForAI(sjfResult),
+      srtf: formatResultForAI(srtfResult),
+      priority: formatResultForAI(priorityResult),
+      priorityPreemptive: formatResultForAI(priorityPreemptiveResult),
+      roundRobin: formatResultForAI(rrResult),
+      priorityAging: formatResultForAI(priorityAgingResult),
       performanceCriteria,
     };
 

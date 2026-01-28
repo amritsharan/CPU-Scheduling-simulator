@@ -1,11 +1,21 @@
 import { Process, GanttChartEntry, SimulationResult } from './types';
-import { IDLE_COLOR } from './constants';
+import { IDLE_COLOR, CONTEXT_SWITCH_COLOR } from './constants';
 
 const deepCopyProcesses = (processes: Process[]): Process[] => {
   return JSON.parse(JSON.stringify(processes));
 };
 
-export const runFCFS = (processes: Process[]): SimulationResult => {
+const calculateCpuUtilization = (ganttChart: GanttChartEntry[], totalTime: number): number => {
+    if (totalTime === 0) return 0;
+
+    const busyTime = ganttChart
+        .filter(g => g.processId !== 'idle' && g.processId !== 'context-switch')
+        .reduce((acc, g) => acc + (g.end - g.start), 0);
+    
+    return (busyTime / totalTime) * 100;
+}
+
+export const runFCFS = (processes: Process[], contextSwitchTime: number): SimulationResult => {
   const localProcesses = deepCopyProcesses(processes).sort((a, b) => a.arrivalTime - b.arrivalTime);
   const n = localProcesses.length;
   if (n === 0) {
@@ -16,6 +26,7 @@ export const runFCFS = (processes: Process[]): SimulationResult => {
       avgWaitingTime: 0,
       avgTurnaroundTime: 0,
       contextSwitches: 0,
+      cpuUtilization: 0,
     };
   }
 
@@ -32,8 +43,10 @@ export const runFCFS = (processes: Process[]): SimulationResult => {
       currentTime = p.arrivalTime;
     }
 
-    if(lastProcessId !== null && lastProcessId !== p.id) {
+    if(lastProcessId !== null && lastProcessId !== p.id && contextSwitchTime > 0) {
         contextSwitches++;
+        ganttChart.push({ processId: 'context-switch', processName: 'CS', start: currentTime, end: currentTime + contextSwitchTime, color: CONTEXT_SWITCH_COLOR });
+        currentTime += contextSwitchTime;
     }
 
     p.waitingTime = currentTime - p.arrivalTime;
@@ -49,6 +62,8 @@ export const runFCFS = (processes: Process[]): SimulationResult => {
     lastProcessId = p.id;
   });
 
+  const cpuUtilization = calculateCpuUtilization(ganttChart, currentTime);
+
   return {
     algorithm: 'First-Come, First-Served',
     processes: localProcesses,
@@ -56,10 +71,11 @@ export const runFCFS = (processes: Process[]): SimulationResult => {
     avgWaitingTime: totalWaitingTime / n,
     avgTurnaroundTime: totalTurnaroundTime / n,
     contextSwitches,
+    cpuUtilization,
   };
 };
 
-export const runSJF = (processes: Process[]): SimulationResult => {
+export const runSJF = (processes: Process[], contextSwitchTime: number): SimulationResult => {
     const localProcesses = deepCopyProcesses(processes);
     const n = localProcesses.length;
     if (n === 0) {
@@ -70,6 +86,7 @@ export const runSJF = (processes: Process[]): SimulationResult => {
             avgWaitingTime: 0,
             avgTurnaroundTime: 0,
             contextSwitches: 0,
+            cpuUtilization: 0,
         };
     }
 
@@ -103,8 +120,10 @@ export const runSJF = (processes: Process[]): SimulationResult => {
         const currentProcess = availableProcesses[0];
         const processInList = localProcesses.find(p => p.id === currentProcess.id)!;
 
-        if (lastProcessId !== null && lastProcessId !== processInList.id) {
+        if (lastProcessId !== null && lastProcessId !== processInList.id && contextSwitchTime > 0) {
             contextSwitches++;
+            ganttChart.push({ processId: 'context-switch', processName: 'CS', start: currentTime, end: currentTime + contextSwitchTime, color: CONTEXT_SWITCH_COLOR });
+            currentTime += contextSwitchTime;
         }
 
         const startTime = currentTime;
@@ -122,6 +141,8 @@ export const runSJF = (processes: Process[]): SimulationResult => {
         lastProcessId = processInList.id;
     }
 
+    const cpuUtilization = calculateCpuUtilization(ganttChart, currentTime);
+
     return {
         algorithm: 'Shortest Job First (Non-Preemptive)',
         processes: localProcesses,
@@ -129,10 +150,11 @@ export const runSJF = (processes: Process[]): SimulationResult => {
         avgWaitingTime: totalWaitingTime / n,
         avgTurnaroundTime: totalTurnaroundTime / n,
         contextSwitches,
+        cpuUtilization,
     };
 };
 
-export const runSRTF = (processes: Process[]): SimulationResult => {
+export const runSRTF = (processes: Process[], contextSwitchTime: number): SimulationResult => {
   const localProcesses = deepCopyProcesses(processes).map(p => ({ ...p, remainingTime: p.burstTime }));
   const n = localProcesses.length;
 
@@ -144,6 +166,7 @@ export const runSRTF = (processes: Process[]): SimulationResult => {
       avgWaitingTime: 0,
       avgTurnaroundTime: 0,
       contextSwitches: 0,
+      cpuUtilization: 0,
     };
   }
 
@@ -152,7 +175,6 @@ export const runSRTF = (processes: Process[]): SimulationResult => {
   let completed = 0;
   let contextSwitches = 0;
   let lastProcessId: number | null = null;
-  const completedProcesses: Process[] = [];
 
   while (completed < n) {
     const available = localProcesses.filter(p => p.arrivalTime <= currentTime && p.remainingTime! > 0);
@@ -164,7 +186,7 @@ export const runSRTF = (processes: Process[]): SimulationResult => {
         ganttChart.push({ processId: 'idle', processName: 'Idle', start: currentTime, end: nextArrivalTime, color: IDLE_COLOR });
         currentTime = nextArrivalTime;
       } else {
-        break; // No more processes to run
+        break; 
       }
       continue;
     }
@@ -174,6 +196,8 @@ export const runSRTF = (processes: Process[]): SimulationResult => {
 
     if (lastProcessId !== null && lastProcessId !== currentProcess.id) {
       contextSwitches++;
+      ganttChart.push({ processId: 'context-switch', processName: 'CS', start: currentTime, end: currentTime + contextSwitchTime, color: CONTEXT_SWITCH_COLOR });
+      currentTime += contextSwitchTime;
     }
 
     const startTime = currentTime;
@@ -181,7 +205,7 @@ export const runSRTF = (processes: Process[]): SimulationResult => {
     currentProcess.remainingTime!--;
     
     const lastGanttEntry = ganttChart.length > 0 ? ganttChart[ganttChart.length - 1] : null;
-    if (lastGanttEntry && lastGanttEntry.processId === currentProcess.id) {
+    if (lastGanttEntry && lastGanttEntry.processId === currentProcess.id && lastGanttEntry.end === startTime) {
       lastGanttEntry.end = currentTime;
     } else {
       ganttChart.push({ processId: currentProcess.id, processName: currentProcess.name, start: startTime, end: currentTime, color: currentProcess.color });
@@ -200,6 +224,7 @@ export const runSRTF = (processes: Process[]): SimulationResult => {
 
   const totalWaitingTime = localProcesses.reduce((acc, p) => acc + (p.waitingTime || 0), 0);
   const totalTurnaroundTime = localProcesses.reduce((acc, p) => acc + (p.turnaroundTime || 0), 0);
+  const cpuUtilization = calculateCpuUtilization(ganttChart, currentTime);
   
   return {
     algorithm: 'Shortest Remaining Time First (SJF Preemptive)',
@@ -208,10 +233,11 @@ export const runSRTF = (processes: Process[]): SimulationResult => {
     avgWaitingTime: totalWaitingTime / n,
     avgTurnaroundTime: totalTurnaroundTime / n,
     contextSwitches,
+    cpuUtilization,
   };
 };
 
-export const runPriority = (processes: Process[]): SimulationResult => {
+export const runPriority = (processes: Process[], contextSwitchTime: number): SimulationResult => {
     const localProcesses = deepCopyProcesses(processes);
     const n = localProcesses.length;
     if (n === 0) {
@@ -222,6 +248,7 @@ export const runPriority = (processes: Process[]): SimulationResult => {
             avgWaitingTime: 0,
             avgTurnaroundTime: 0,
             contextSwitches: 0,
+            cpuUtilization: 0,
         };
     }
 
@@ -255,8 +282,10 @@ export const runPriority = (processes: Process[]): SimulationResult => {
         const currentProcess = availableProcesses[0];
         const processInList = localProcesses.find(p => p.id === currentProcess.id)!;
 
-        if (lastProcessId !== null && lastProcessId !== processInList.id) {
+        if (lastProcessId !== null && lastProcessId !== processInList.id && contextSwitchTime > 0) {
             contextSwitches++;
+            ganttChart.push({ processId: 'context-switch', processName: 'CS', start: currentTime, end: currentTime + contextSwitchTime, color: CONTEXT_SWITCH_COLOR });
+            currentTime += contextSwitchTime;
         }
 
         const startTime = currentTime;
@@ -273,6 +302,8 @@ export const runPriority = (processes: Process[]): SimulationResult => {
         completed++;
         lastProcessId = processInList.id;
     }
+    
+    const cpuUtilization = calculateCpuUtilization(ganttChart, currentTime);
 
     return {
         algorithm: 'Priority (Non-Preemptive)',
@@ -281,10 +312,11 @@ export const runPriority = (processes: Process[]): SimulationResult => {
         avgWaitingTime: totalWaitingTime / n,
         avgTurnaroundTime: totalTurnaroundTime / n,
         contextSwitches,
+        cpuUtilization,
     };
 };
 
-export const runPriorityPreemptive = (processes: Process[]): SimulationResult => {
+export const runPriorityPreemptive = (processes: Process[], contextSwitchTime: number): SimulationResult => {
   const localProcesses = deepCopyProcesses(processes).map(p => ({ ...p, remainingTime: p.burstTime }));
   const n = localProcesses.length;
 
@@ -296,6 +328,7 @@ export const runPriorityPreemptive = (processes: Process[]): SimulationResult =>
       avgWaitingTime: 0,
       avgTurnaroundTime: 0,
       contextSwitches: 0,
+      cpuUtilization: 0,
     };
   }
 
@@ -315,7 +348,7 @@ export const runPriorityPreemptive = (processes: Process[]): SimulationResult =>
         ganttChart.push({ processId: 'idle', processName: 'Idle', start: currentTime, end: nextArrivalTime, color: IDLE_COLOR });
         currentTime = nextArrivalTime;
       } else {
-        break; // No more processes to run
+        break;
       }
       continue;
     }
@@ -325,6 +358,8 @@ export const runPriorityPreemptive = (processes: Process[]): SimulationResult =>
 
     if (lastProcessId !== null && lastProcessId !== currentProcess.id) {
       contextSwitches++;
+      ganttChart.push({ processId: 'context-switch', processName: 'CS', start: currentTime, end: currentTime + contextSwitchTime, color: CONTEXT_SWITCH_COLOR });
+      currentTime += contextSwitchTime;
     }
 
     const startTime = currentTime;
@@ -332,7 +367,7 @@ export const runPriorityPreemptive = (processes: Process[]): SimulationResult =>
     currentProcess.remainingTime!--;
     
     const lastGanttEntry = ganttChart.length > 0 ? ganttChart[ganttChart.length - 1] : null;
-    if (lastGanttEntry && lastGanttEntry.processId === currentProcess.id) {
+    if (lastGanttEntry && lastGanttEntry.processId === currentProcess.id && lastGanttEntry.end === startTime) {
       lastGanttEntry.end = currentTime;
     } else {
       ganttChart.push({ processId: currentProcess.id, processName: currentProcess.name, start: startTime, end: currentTime, color: currentProcess.color });
@@ -351,6 +386,7 @@ export const runPriorityPreemptive = (processes: Process[]): SimulationResult =>
 
   const totalWaitingTime = localProcesses.reduce((acc, p) => acc + (p.waitingTime || 0), 0);
   const totalTurnaroundTime = localProcesses.reduce((acc, p) => acc + (p.turnaroundTime || 0), 0);
+  const cpuUtilization = calculateCpuUtilization(ganttChart, currentTime);
   
   return {
     algorithm: 'Priority (Preemptive)',
@@ -359,11 +395,12 @@ export const runPriorityPreemptive = (processes: Process[]): SimulationResult =>
     avgWaitingTime: totalWaitingTime / n,
     avgTurnaroundTime: totalTurnaroundTime / n,
     contextSwitches,
+    cpuUtilization,
   };
 };
 
 
-export const runRoundRobin = (processes: Process[], timeQuantum: number): SimulationResult => {
+export const runRoundRobin = (processes: Process[], timeQuantum: number, contextSwitchTime: number): SimulationResult => {
     const localProcesses = deepCopyProcesses(processes).map(p => ({ ...p, remainingTime: p.burstTime }));
     const n = localProcesses.length;
 
@@ -375,6 +412,7 @@ export const runRoundRobin = (processes: Process[], timeQuantum: number): Simula
             avgWaitingTime: 0,
             avgTurnaroundTime: 0,
             contextSwitches: 0,
+            cpuUtilization: 0,
         };
     }
     
@@ -410,6 +448,8 @@ export const runRoundRobin = (processes: Process[], timeQuantum: number): Simula
         
         if (lastProcessId !== null && lastProcessId !== currentProcess.id) {
             contextSwitches++;
+            ganttChart.push({ processId: 'context-switch', processName: 'CS', start: currentTime, end: currentTime + contextSwitchTime, color: CONTEXT_SWITCH_COLOR });
+            currentTime += contextSwitchTime;
         }
 
         const startTime = currentTime;
@@ -425,7 +465,7 @@ export const runRoundRobin = (processes: Process[], timeQuantum: number): Simula
         
         while (processIdx < n && allProcesses[processIdx].arrivalTime <= currentTime) {
             const arrivingProcess = allProcesses[processIdx];
-            if (!readyQueue.some(p => p.id === arrivingProcess.id)) {
+            if (!readyQueue.some(p => p.id === arrivingProcess.id) && allProcesses.find(ap => ap.id === arrivingProcess.id)?.remainingTime! > 0) {
                 readyQueue.push(arrivingProcess);
             }
             processIdx++;
@@ -446,6 +486,7 @@ export const runRoundRobin = (processes: Process[], timeQuantum: number): Simula
 
     const totalWaitingTime = localProcesses.reduce((acc, p) => acc + (p.waitingTime || 0), 0);
     const totalTurnaroundTime = localProcesses.reduce((acc, p) => acc + (p.turnaroundTime || 0), 0);
+    const cpuUtilization = calculateCpuUtilization(ganttChart, currentTime);
     
     return {
         algorithm: 'Round Robin',
@@ -454,5 +495,99 @@ export const runRoundRobin = (processes: Process[], timeQuantum: number): Simula
         avgWaitingTime: totalWaitingTime / n,
         avgTurnaroundTime: totalTurnaroundTime / n,
         contextSwitches,
+        cpuUtilization,
+    };
+};
+
+export const runPriorityWithAging = (processes: Process[], contextSwitchTime: number): SimulationResult => {
+    const localProcesses = deepCopyProcesses(processes).map(p => ({ ...p, originalPriority: p.priority }));
+    const n = localProcesses.length;
+    if (n === 0) {
+        return {
+            algorithm: 'Priority with Aging (Non-Preemptive)',
+            processes: [],
+            ganttChart: [],
+            avgWaitingTime: 0,
+            avgTurnaroundTime: 0,
+            contextSwitches: 0,
+            cpuUtilization: 0,
+        };
+    }
+
+    const ganttChart: GanttChartEntry[] = [];
+    let currentTime = 0;
+    let completed = 0;
+    let totalWaitingTime = 0;
+    let totalTurnaroundTime = 0;
+    let contextSwitches = 0;
+    let lastProcessId: number | null = null;
+    const AGING_THRESHOLD = 10;
+
+    while(completed < n) {
+        let availableProcesses = localProcesses
+            .filter(p => p.arrivalTime <= currentTime && !p.completionTime);
+        
+        if (availableProcesses.length === 0) {
+            const remainingProcesses = localProcesses.filter(p => !p.completionTime);
+            if (remainingProcesses.length === 0) break;
+            const nextArrivalTime = Math.min(...remainingProcesses.map(p => p.arrivalTime));
+            if(isFinite(nextArrivalTime) && nextArrivalTime > currentTime) {
+                ganttChart.push({ processId: 'idle', processName: 'Idle', start: currentTime, end: nextArrivalTime, color: IDLE_COLOR });
+                currentTime = nextArrivalTime;
+            }
+            continue;
+        }
+
+        // Apply aging
+        availableProcesses.forEach(p => {
+            const waitingTime = currentTime - p.arrivalTime;
+            if (waitingTime > AGING_THRESHOLD) {
+                const newPriority = p.originalPriority! - Math.floor(waitingTime / AGING_THRESHOLD);
+                p.priority = Math.max(1, newPriority);
+            }
+        });
+        
+        availableProcesses.sort((a, b) => {
+            if (a.priority === b.priority) return a.arrivalTime - b.arrivalTime;
+            return a.priority - b.priority;
+        });
+
+        const currentProcess = availableProcesses[0];
+        const processInList = localProcesses.find(p => p.id === currentProcess.id)!;
+
+        if (lastProcessId !== null && lastProcessId !== processInList.id && contextSwitchTime > 0) {
+            contextSwitches++;
+            ganttChart.push({ processId: 'context-switch', processName: 'CS', start: currentTime, end: currentTime + contextSwitchTime, color: CONTEXT_SWITCH_COLOR });
+            currentTime += contextSwitchTime;
+        }
+
+        const startTime = currentTime;
+        processInList.waitingTime = currentTime - processInList.arrivalTime;
+        currentTime += processInList.burstTime;
+        processInList.completionTime = currentTime;
+        processInList.turnaroundTime = processInList.completionTime - processInList.arrivalTime;
+
+        totalWaitingTime += processInList.waitingTime;
+        totalTurnaroundTime += processInList.turnaroundTime;
+
+        ganttChart.push({ processId: processInList.id, processName: processInList.name, start: startTime, end: processInList.completionTime, color: processInList.color });
+
+        completed++;
+        lastProcessId = processInList.id;
+        
+        // Reset priorities for next iteration's aging calculation
+        localProcesses.forEach(p => p.priority = p.originalPriority!);
+    }
+    
+    const cpuUtilization = calculateCpuUtilization(ganttChart, currentTime);
+
+    return {
+        algorithm: 'Priority with Aging (Non-Preemptive)',
+        processes: localProcesses,
+        ganttChart,
+        avgWaitingTime: totalWaitingTime / n,
+        avgTurnaroundTime: totalTurnaroundTime / n,
+        contextSwitches,
+        cpuUtilization,
     };
 };

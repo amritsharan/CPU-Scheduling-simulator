@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 
 interface SimulationResultsProps {
   results: SimulationResult[];
@@ -34,7 +33,7 @@ export function SimulationResults({ results }: SimulationResultsProps) {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue={results[0].algorithm}>
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 h-auto">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 h-auto">
             {results.map((result) => (
               <TabsTrigger key={result.algorithm} value={result.algorithm} className="whitespace-normal">
                 {result.algorithm}
@@ -43,7 +42,7 @@ export function SimulationResults({ results }: SimulationResultsProps) {
           </TabsList>
           {results.map((result) => (
             <TabsContent key={result.algorithm} value={result.algorithm} className="mt-4 space-y-6">
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                   <CardHeader className="pb-2">
                     <CardDescription>Avg. Waiting Time</CardDescription>
@@ -60,6 +59,12 @@ export function SimulationResults({ results }: SimulationResultsProps) {
                   <CardHeader className="pb-2">
                     <CardDescription>Context Switches</CardDescription>
                     <CardTitle className="text-3xl text-primary">{result.contextSwitches}</CardTitle>
+                  </CardHeader>
+                </Card>
+                 <Card>
+                  <CardHeader className="pb-2">
+                    <CardDescription>CPU Utilization</CardDescription>
+                    <CardTitle className="text-3xl text-primary">{result.cpuUtilization.toFixed(2)}%</CardTitle>
                   </CardHeader>
                 </Card>
               </div>
@@ -90,7 +95,7 @@ export function SimulationResults({ results }: SimulationResultsProps) {
                               <TableCell><Badge style={{ backgroundColor: p.color }} className="text-white">{p.name}</Badge></TableCell>
                               <TableCell>{p.arrivalTime}</TableCell>
                               <TableCell>{p.burstTime}</TableCell>
-                              <TableCell>{p.priority}</TableCell>
+                              <TableCell>{p.originalPriority ?? p.priority}</TableCell>
                               <TableCell>{p.completionTime?.toFixed(2)}</TableCell>
                               <TableCell>{p.turnaroundTime?.toFixed(2)}</TableCell>
                               <TableCell>{p.waitingTime?.toFixed(2)}</TableCell>

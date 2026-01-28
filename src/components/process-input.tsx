@@ -13,9 +13,11 @@ interface ProcessInputProps {
   setProcesses: React.Dispatch<React.SetStateAction<Process[]>>;
   timeQuantum: number;
   setTimeQuantum: React.Dispatch<React.SetStateAction<number>>;
+  contextSwitchTime: number;
+  setContextSwitchTime: React.Dispatch<React.SetStateAction<number>>;
 }
 
-export function ProcessInput({ processes, setProcesses, timeQuantum, setTimeQuantum }: ProcessInputProps) {
+export function ProcessInput({ processes, setProcesses, timeQuantum, setTimeQuantum, contextSwitchTime, setContextSwitchTime }: ProcessInputProps) {
 
   const addProcess = () => {
     const newId = processes.length > 0 ? Math.max(...processes.map(p => p.id)) + 1 : 1;
@@ -100,20 +102,33 @@ export function ProcessInput({ processes, setProcesses, timeQuantum, setTimeQuan
             </TableBody>
           </Table>
         </div>
-        <div className="mt-4 flex items-center justify-between gap-4">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
           <Button variant="outline" onClick={addProcess}>
             <Plus className="mr-2 h-4 w-4" /> Add Process
           </Button>
-          <div className="flex items-center gap-2">
-            <Label htmlFor="timeQuantum" className="whitespace-nowrap">Round Robin Time Quantum</Label>
-            <Input
-              id="timeQuantum"
-              type="number"
-              value={timeQuantum}
-              onChange={(e) => setTimeQuantum(Math.max(1, Number(e.target.value)))}
-              min="1"
-              className="w-24"
-            />
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="contextSwitchTime" className="whitespace-nowrap">Context Switch Time</Label>
+              <Input
+                id="contextSwitchTime"
+                type="number"
+                value={contextSwitchTime}
+                onChange={(e) => setContextSwitchTime(Math.max(0, Number(e.target.value)))}
+                min="0"
+                className="w-24"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="timeQuantum" className="whitespace-nowrap">Round Robin Time Quantum</Label>
+              <Input
+                id="timeQuantum"
+                type="number"
+                value={timeQuantum}
+                onChange={(e) => setTimeQuantum(Math.max(1, Number(e.target.value)))}
+                min="1"
+                className="w-24"
+              />
+            </div>
           </div>
         </div>
       </CardContent>
