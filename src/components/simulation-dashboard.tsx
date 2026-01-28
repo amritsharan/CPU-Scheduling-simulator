@@ -30,19 +30,20 @@ export function SimulationDashboard() {
   const [processes, setProcesses] = useState<Process[]>(assignColors(initialProcesses));
   const [timeQuantum, setTimeQuantum] = useState(4);
   const [contextSwitchTime, setContextSwitchTime] = useState(1);
+  const [numberOfCores, setNumberOfCores] = useState(1);
   const [simulationResults, setSimulationResults] = useState<SimulationResult[]>([]);
 
   const runSimulations = () => {
     const coloredProcesses = assignColors(processes);
     setProcesses(coloredProcesses);
 
-    const fcfsResult = runFCFS(coloredProcesses, contextSwitchTime);
-    const sjfResult = runSJF(coloredProcesses, contextSwitchTime);
-    const srtfResult = runSRTF(coloredProcesses, contextSwitchTime);
-    const priorityResult = runPriority(coloredProcesses, contextSwitchTime);
-    const priorityPreemptiveResult = runPriorityPreemptive(coloredProcesses, contextSwitchTime);
-    const rrResult = runRoundRobin(coloredProcesses, timeQuantum, contextSwitchTime);
-    const priorityAgingResult = runPriorityWithAging(coloredProcesses, contextSwitchTime);
+    const fcfsResult = runFCFS(coloredProcesses, contextSwitchTime, numberOfCores);
+    const sjfResult = runSJF(coloredProcesses, contextSwitchTime, numberOfCores);
+    const srtfResult = runSRTF(coloredProcesses, contextSwitchTime, numberOfCores);
+    const priorityResult = runPriority(coloredProcesses, contextSwitchTime, numberOfCores);
+    const priorityPreemptiveResult = runPriorityPreemptive(coloredProcesses, contextSwitchTime, numberOfCores);
+    const rrResult = runRoundRobin(coloredProcesses, timeQuantum, contextSwitchTime, numberOfCores);
+    const priorityAgingResult = runPriorityWithAging(coloredProcesses, contextSwitchTime, numberOfCores);
     
     setSimulationResults([fcfsResult, sjfResult, srtfResult, priorityResult, priorityPreemptiveResult, rrResult, priorityAgingResult]);
   };
@@ -56,6 +57,8 @@ export function SimulationDashboard() {
         setTimeQuantum={setTimeQuantum}
         contextSwitchTime={contextSwitchTime}
         setContextSwitchTime={setContextSwitchTime}
+        numberOfCores={numberOfCores}
+        setNumberOfCores={setNumberOfCores}
       />
       
       <div className="flex justify-center">

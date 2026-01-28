@@ -18,6 +18,7 @@ export interface GanttChartEntry {
   start: number;
   end: number;
   color: string;
+  coreId: number;
 }
 
 export interface SimulationResult {
@@ -28,4 +29,5 @@ export interface SimulationResult {
   avgTurnaroundTime: number;
   contextSwitches: number;
   cpuUtilization: number;
+  numberOfCores: number;
 }

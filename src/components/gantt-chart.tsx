@@ -1,35 +1,35 @@
 "use client";
 
-import { GanttChartEntry, Process } from "@/lib/types";
+import { GanttChartEntry } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 interface GanttChartProps {
   ganttChart: GanttChartEntry[];
+  numberOfCores: number;
 }
 
-export function GanttChart({ ganttChart }: GanttChartProps) {
-  if (!ganttChart || ganttChart.length === 0) {
+export function GanttChart({ ganttChart, numberOfCores }: GanttChartProps) {
+  if (!ganttChart || ganttChart.length === 0 || !numberOfCores) {
     return null;
   }
 
-  const totalDuration = ganttChart[ganttChart.length - 1].end;
-  const timeMarkers = Array.from({ length: Math.ceil(totalDuration) + 1 }, (_, i) => i);
+  const overallDuration = ganttChart.reduce((max, entry) => Math.max(max, entry.end), 0);
+  const timeMarkers = Array.from({ length: Math.ceil(overallDuration) + 2 }, (_, i) => i);
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Gantt Chart</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <TooltipProvider>
-          <ScrollArea className="w-full whitespace-nowrap">
-            <div className="relative pt-8 pr-4" style={{ width: `${totalDuration * 3}rem` }}>
-              <div className="flex h-12 w-full rounded overflow-hidden border">
-                {ganttChart.map((entry, index) => {
+
+  const coreCharts = Array.from({ length: numberOfCores }, (_, coreIndex) => {
+    const coreGanttChart = ganttChart.filter(entry => entry.coreId === coreIndex);
+    
+    return (
+        <div key={coreIndex} className="mb-6">
+            <h4 className="font-semibold mb-2 text-muted-foreground">Core {coreIndex + 1}</h4>
+            <div className="relative pt-8 pr-4" style={{ width: `${(overallDuration + 1) * 3}rem`, minWidth: '100%' }}>
+              <div className="relative h-12 w-full rounded overflow-hidden border">
+                {coreGanttChart.map((entry, index) => {
                   const duration = entry.end - entry.start;
-                  if (duration === 0) return null;
+                  if (duration <= 0) return null;
                   return (
                     <Tooltip key={index} delayDuration={0}>
                       <TooltipTrigger asChild>
@@ -38,22 +38,25 @@ export function GanttChart({ ganttChart }: GanttChartProps) {
                           style={{
                             width: `${duration * 3}rem`,
                             backgroundColor: entry.color,
+                            position: 'absolute',
+                            left: `${entry.start * 3}rem`,
                           }}
                         >
-                          <span className="px-1">{entry.processName}</span>
+                          <span className="px-1 truncate">{entry.processName}</span>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>Process: {entry.processName}</p>
-                        <p>Start: {entry.start}</p>
-                        <p>End: {entry.end}</p>
+                        <p>Core: {coreIndex + 1}</p>
+                        <p>Start: {entry.start.toFixed(2)}</p>
+                        <p>End: {entry.end.toFixed(2)}</p>
                         <p>Duration: {duration.toFixed(2)}</p>
                       </TooltipContent>
                     </Tooltip>
                   );
                 })}
               </div>
-              <div className="relative w-full h-6 mt-1">
+              <div className="relative w-full h-6 mt-1" style={{width: `${(overallDuration + 1) * 3}rem`}}>
                 {timeMarkers.map((time) => (
                   <div
                     key={time}
@@ -66,6 +69,19 @@ export function GanttChart({ ganttChart }: GanttChartProps) {
                 ))}
               </div>
             </div>
+        </div>
+    );
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Gantt Chart</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <TooltipProvider>
+          <ScrollArea className="w-full">
+            {coreCharts}
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
         </TooltipProvider>

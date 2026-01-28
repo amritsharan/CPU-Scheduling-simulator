@@ -69,7 +69,7 @@ export function SimulationResults({ results }: SimulationResultsProps) {
                 </Card>
               </div>
               
-              <GanttChart ganttChart={result.ganttChart} />
+              <GanttChart ganttChart={result.ganttChart} numberOfCores={result.numberOfCores} />
 
               <Card>
                 <CardHeader>
