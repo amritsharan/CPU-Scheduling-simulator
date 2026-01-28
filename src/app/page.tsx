@@ -1,7 +1,29 @@
+'use client';
 import { SimulationDashboard } from '@/components/simulation-dashboard';
 import { Cpu } from 'lucide-react';
+import { useUser } from '@/firebase';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { UserNav } from '@/components/user-nav';
 
 export default function Home() {
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isUserLoading, router]);
+
+  if (isUserLoading || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <Cpu className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -10,6 +32,9 @@ export default function Home() {
           <h1 className="text-2xl font-headline font-bold text-foreground">
             SimuSched
           </h1>
+          <div className="ml-auto flex items-center gap-4">
+            <UserNav />
+          </div>
         </div>
       </header>
       <main className="flex-1 container py-8">
