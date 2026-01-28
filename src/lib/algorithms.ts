@@ -7,6 +7,18 @@ const deepCopyProcesses = (processes: Process[]): Process[] => {
 
 export const runFCFS = (processes: Process[]): SimulationResult => {
   const localProcesses = deepCopyProcesses(processes).sort((a, b) => a.arrivalTime - b.arrivalTime);
+  const n = localProcesses.length;
+  if (n === 0) {
+    return {
+      algorithm: 'First-Come, First-Served',
+      processes: [],
+      ganttChart: [],
+      avgWaitingTime: 0,
+      avgTurnaroundTime: 0,
+      contextSwitches: 0,
+    };
+  }
+
   const ganttChart: GanttChartEntry[] = [];
   let currentTime = 0;
   let totalWaitingTime = 0;
@@ -41,8 +53,8 @@ export const runFCFS = (processes: Process[]): SimulationResult => {
     algorithm: 'First-Come, First-Served',
     processes: localProcesses,
     ganttChart,
-    avgWaitingTime: totalWaitingTime / localProcesses.length,
-    avgTurnaroundTime: totalTurnaroundTime / localProcesses.length,
+    avgWaitingTime: totalWaitingTime / n,
+    avgTurnaroundTime: totalTurnaroundTime / n,
     contextSwitches,
   };
 };
@@ -50,6 +62,17 @@ export const runFCFS = (processes: Process[]): SimulationResult => {
 export const runSJF = (processes: Process[]): SimulationResult => {
     const localProcesses = deepCopyProcesses(processes);
     const n = localProcesses.length;
+    if (n === 0) {
+        return {
+            algorithm: 'Shortest Job First (Non-Preemptive)',
+            processes: [],
+            ganttChart: [],
+            avgWaitingTime: 0,
+            avgTurnaroundTime: 0,
+            contextSwitches: 0,
+        };
+    }
+
     const ganttChart: GanttChartEntry[] = [];
     let currentTime = 0;
     let completed = 0;
@@ -67,8 +90,10 @@ export const runSJF = (processes: Process[]): SimulationResult => {
             });
         
         if (availableProcesses.length === 0) {
-            const nextArrivalTime = Math.min(...localProcesses.filter(p => !p.completionTime).map(p => p.arrivalTime));
-            if(nextArrivalTime > currentTime) {
+            const remainingProcesses = localProcesses.filter(p => !p.completionTime);
+            if (remainingProcesses.length === 0) break;
+            const nextArrivalTime = Math.min(...remainingProcesses.map(p => p.arrivalTime));
+            if(isFinite(nextArrivalTime) && nextArrivalTime > currentTime) {
                 ganttChart.push({ processId: 'idle', processName: 'Idle', start: currentTime, end: nextArrivalTime, color: IDLE_COLOR });
                 currentTime = nextArrivalTime;
             }
@@ -110,6 +135,17 @@ export const runSJF = (processes: Process[]): SimulationResult => {
 export const runPriority = (processes: Process[]): SimulationResult => {
     const localProcesses = deepCopyProcesses(processes);
     const n = localProcesses.length;
+    if (n === 0) {
+        return {
+            algorithm: 'Priority (Non-Preemptive)',
+            processes: [],
+            ganttChart: [],
+            avgWaitingTime: 0,
+            avgTurnaroundTime: 0,
+            contextSwitches: 0,
+        };
+    }
+
     const ganttChart: GanttChartEntry[] = [];
     let currentTime = 0;
     let completed = 0;
@@ -127,8 +163,10 @@ export const runPriority = (processes: Process[]): SimulationResult => {
             });
 
         if (availableProcesses.length === 0) {
-             const nextArrivalTime = Math.min(...localProcesses.filter(p => !p.completionTime).map(p => p.arrivalTime));
-            if(nextArrivalTime > currentTime) {
+             const remainingProcesses = localProcesses.filter(p => !p.completionTime);
+             if (remainingProcesses.length === 0) break;
+            const nextArrivalTime = Math.min(...remainingProcesses.map(p => p.arrivalTime));
+            if(isFinite(nextArrivalTime) && nextArrivalTime > currentTime) {
                 ganttChart.push({ processId: 'idle', processName: 'Idle', start: currentTime, end: nextArrivalTime, color: IDLE_COLOR });
                 currentTime = nextArrivalTime;
             }
@@ -170,42 +208,45 @@ export const runPriority = (processes: Process[]): SimulationResult => {
 export const runRoundRobin = (processes: Process[], timeQuantum: number): SimulationResult => {
     const localProcesses = deepCopyProcesses(processes).map(p => ({ ...p, remainingTime: p.burstTime }));
     const n = localProcesses.length;
+
+    if (n === 0) {
+        return {
+            algorithm: 'Round Robin',
+            processes: [],
+            ganttChart: [],
+            avgWaitingTime: 0,
+            avgTurnaroundTime: 0,
+            contextSwitches: 0,
+        };
+    }
+    
+    localProcesses.sort((a, b) => a.arrivalTime - b.arrivalTime || a.id - b.id);
+    
     const ganttChart: GanttChartEntry[] = [];
+    const readyQueue: Process[] = [];
     let currentTime = 0;
     let completed = 0;
-    const readyQueue: Process[] = [];
     let contextSwitches = 0;
     let lastProcessId: number | null = null;
-    const arrivalMap: { [time: number]: Process[] } = {};
-    localProcesses.forEach(p => {
-        if (!arrivalMap[p.arrivalTime]) {
-            arrivalMap[p.arrivalTime] = [];
-        }
-        arrivalMap[p.arrivalTime].push(p);
-    });
-    
-    let processIndex = 0;
+    let processIdx = 0;
 
     while (completed < n) {
-        // Add processes that have arrived to the ready queue
-        Object.keys(arrivalMap).forEach(t => {
-            if (parseInt(t) <= currentTime) {
-                readyQueue.push(...arrivalMap[parseInt(t)].sort((a,b) => a.arrivalTime - b.arrivalTime));
-                delete arrivalMap[parseInt(t)];
-            }
-        });
+        while (processIdx < n && localProcesses[processIdx].arrivalTime <= currentTime) {
+            readyQueue.push(localProcesses[processIdx]);
+            processIdx++;
+        }
 
         if (readyQueue.length === 0) {
-            const nextArrivalTime = Math.min(...Object.keys(arrivalMap).map(Number));
-             if (isFinite(nextArrivalTime) && nextArrivalTime > currentTime) {
-                ganttChart.push({ processId: 'idle', processName: 'Idle', start: currentTime, end: nextArrivalTime, color: IDLE_COLOR });
-                currentTime = nextArrivalTime;
-             } else {
-                 // This case happens if all processes are completed, but loop hasn't exited.
-                 // It's a safeguard.
-                 break;
-             }
-            continue;
+            if (processIdx < n) {
+                const nextArrivalTime = localProcesses[processIdx].arrivalTime;
+                if (nextArrivalTime > currentTime) {
+                    ganttChart.push({ processId: 'idle', processName: 'Idle', start: currentTime, end: nextArrivalTime, color: IDLE_COLOR });
+                    currentTime = nextArrivalTime;
+                }
+                continue; 
+            } else {
+                break;
+            }
         }
 
         const currentProcess = readyQueue.shift()!;
@@ -213,6 +254,7 @@ export const runRoundRobin = (processes: Process[], timeQuantum: number): Simula
         if (lastProcessId !== null && lastProcessId !== currentProcess.id) {
             contextSwitches++;
         }
+        lastProcessId = currentProcess.id;
 
         const startTime = currentTime;
         const executionTime = Math.min(currentProcess.remainingTime!, timeQuantum);
@@ -221,14 +263,10 @@ export const runRoundRobin = (processes: Process[], timeQuantum: number): Simula
 
         ganttChart.push({ processId: currentProcess.id, processName: currentProcess.name, start: startTime, end: currentTime, color: currentProcess.color });
         
-        // Add newly arrived processes during this execution
-         Object.keys(arrivalMap).forEach(t => {
-            if (parseInt(t) <= currentTime) {
-                readyQueue.push(...arrivalMap[parseInt(t)].sort((a,b) => a.arrivalTime - b.arrivalTime));
-                delete arrivalMap[parseInt(t)];
-            }
-        });
-
+        while (processIdx < n && localProcesses[processIdx].arrivalTime <= currentTime) {
+            readyQueue.push(localProcesses[processIdx]);
+            processIdx++;
+        }
 
         if (currentProcess.remainingTime! > 0) {
             readyQueue.push(currentProcess);
