@@ -21,10 +21,17 @@ export interface GanttChartEntry {
   coreId: number;
 }
 
+export interface ExecutionLogEntry {
+  time: number;
+  coreId: number;
+  message: string;
+}
+
 export interface SimulationResult {
   algorithm: string;
   processes: Process[];
   ganttChart: GanttChartEntry[];
+  executionLog: ExecutionLogEntry[];
   avgWaitingTime: number;
   avgTurnaroundTime: number;
   contextSwitches: number;

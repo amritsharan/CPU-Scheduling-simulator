@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { ExecutionLog } from "./execution-log";
 
 interface SimulationResultsProps {
   results: SimulationResult[];
@@ -70,6 +71,8 @@ export function SimulationResults({ results }: SimulationResultsProps) {
               </div>
               
               <GanttChart ganttChart={result.ganttChart} numberOfCores={result.numberOfCores} />
+
+              <ExecutionLog log={result.executionLog} />
 
               <Card>
                 <CardHeader>
