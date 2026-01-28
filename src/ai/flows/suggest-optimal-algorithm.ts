@@ -14,10 +14,14 @@ import {z} from 'genkit';
 const SuggestOptimalAlgorithmInputSchema = z.object({
   fcfsWaitingTime: z.number().describe('The average waiting time for FCFS scheduling algorithm.'),
   fcfsTurnaroundTime: z.number().describe('The average turnaround time for FCFS scheduling algorithm.'),
-  sjfWaitingTime: z.number().describe('The average waiting time for SJF scheduling algorithm.'),
-  sjfTurnaroundTime: z.number().describe('The average turnaround time for SJF scheduling algorithm.'),
-  priorityWaitingTime: z.number().describe('The average waiting time for Priority scheduling algorithm.'),
-  priorityTurnaroundTime: z.number().describe('The average turnaround time for Priority scheduling algorithm.'),
+  sjfWaitingTime: z.number().describe('The average waiting time for SJF (Non-Preemptive) scheduling algorithm.'),
+  sjfTurnaroundTime: z.number().describe('The average turnaround time for SJF (Non-Preemptive) scheduling algorithm.'),
+  srtfWaitingTime: z.number().describe('The average waiting time for SRTF (SJF Preemptive) scheduling algorithm.'),
+  srtfTurnaroundTime: z.number().describe('The average turnaround time for SRTF (SJF Preemptive) scheduling algorithm.'),
+  priorityWaitingTime: z.number().describe('The average waiting time for Priority (Non-Preemptive) scheduling algorithm.'),
+  priorityTurnaroundTime: z.number().describe('The average turnaround time for Priority (Non-Preemptive) scheduling algorithm.'),
+  priorityPreemptiveWaitingTime: z.number().describe('The average waiting time for Priority (Preemptive) scheduling algorithm.'),
+  priorityPreemptiveTurnaroundTime: z.number().describe('The average turnaround time for Priority (Preemptive) scheduling algorithm.'),
   roundRobinWaitingTime: z.number().describe('The average waiting time for Round Robin scheduling algorithm.'),
   roundRobinTurnaroundTime: z.number().describe('The average turnaround time for Round Robin scheduling algorithm.'),
   performanceCriteria: z
@@ -46,13 +50,15 @@ const prompt = ai.definePrompt({
   name: 'suggestOptimalAlgorithmPrompt',
   input: {schema: SuggestOptimalAlgorithmInputSchema},
   output: {schema: SuggestOptimalAlgorithmOutputSchema},
-  prompt: `You are an expert in CPU scheduling algorithms. You will analyze the simulation results for different scheduling algorithms (FCFS, SJF, Priority, Round Robin) and suggest the best algorithm based on the user-defined performance criteria. Also, suggest mitigation strategies for trade-offs and starvation scenarios.
+  prompt: `You are an expert in CPU scheduling algorithms. You will analyze the simulation results for different scheduling algorithms (FCFS, SJF (Non-Preemptive), SRTF (SJF Preemptive), Priority (Non-Preemptive), Priority (Preemptive), Round Robin) and suggest the best algorithm based on the user-defined performance criteria. Also, suggest mitigation strategies for trade-offs and starvation scenarios.
 
 Here are the simulation results:
 
 FCFS: Waiting Time = {{{fcfsWaitingTime}}}, Turnaround Time = {{{fcfsTurnaroundTime}}}
-SJF: Waiting Time = {{{sjfWaitingTime}}}, Turnaround Time = {{{sjfTurnaroundTime}}}
-Priority: Waiting Time = {{{priorityWaitingTime}}}, Turnaround Time = {{{priorityTurnaroundTime}}}
+SJF (Non-Preemptive): Waiting Time = {{{sjfWaitingTime}}}, Turnaround Time = {{{sjfTurnaroundTime}}}
+SRTF (SJF Preemptive): Waiting Time = {{{srtfWaitingTime}}}, Turnaround Time = {{{srtfTurnaroundTime}}}
+Priority (Non-Preemptive): Waiting Time = {{{priorityWaitingTime}}}, Turnaround Time = {{{priorityTurnaroundTime}}}
+Priority (Preemptive): Waiting Time = {{{priorityPreemptiveWaitingTime}}}, Turnaround Time = {{{priorityPreemptiveTurnaroundTime}}}
 Round Robin: Waiting Time = {{{roundRobinWaitingTime}}}, Turnaround Time = {{{roundRobinTurnaroundTime}}}
 
 Performance Criteria: {{{performanceCriteria}}}
@@ -61,7 +67,7 @@ Based on the simulation results and the performance criteria, suggest the optima
 
 Consider these points when creating the response:
 
-*   Optimal Scheduling Algorithm: Based on the performance criteria, identify the algorithm (FCFS, SJF, Priority, or Round Robin) that best meets the specified requirements. If the performance criteria is "waiting time", pick the algorithm with the lowest waiting time, and similarly for turnaround time. If it is a combination of both, choose the algorithm that has the best average across both metrics. If two algorithms have the exact same average, pick the SJF algorithm, since that is generally considered optimal.
+*   Optimal Scheduling Algorithm: Based on the performance criteria, identify the algorithm (FCFS, SJF (Non-Preemptive), SRTF (SJF Preemptive), Priority (Non-Preemptive), Priority (Preemptive), or Round Robin) that best meets the specified requirements. If the performance criteria is "waiting time", pick the algorithm with the lowest waiting time, and similarly for turnaround time. If it is a combination of both, choose the algorithm that has the best average across both metrics. If two algorithms have the exact same average, pick the SJF algorithm, since that is generally considered optimal.
 *   Reasoning: Explain why the selected algorithm is the most suitable for the given performance criteria. Consider the characteristics of each algorithm and how they align with the optimization goals.
 *   Trade-offs: Discuss the potential trade-offs associated with the suggested algorithm. For example, if SJF is selected for minimizing waiting time, mention its potential for starvation.
 *   Starvation Mitigation: Provide mitigation strategies for starvation scenarios, if applicable. This could involve techniques like aging or dynamic priority adjustment.

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { Process, SimulationResult } from '@/lib/types';
-import { runFCFS, runSJF, runPriority, runRoundRobin } from '@/lib/algorithms';
+import { runFCFS, runSJF, runPriority, runRoundRobin, runSRTF, runPriorityPreemptive } from '@/lib/algorithms';
 import { ProcessInput } from '@/components/process-input';
 import { SimulationResults } from '@/components/simulation-results';
 import { AiAnalysis } from '@/components/ai-analysis';
@@ -36,10 +36,12 @@ export function SimulationDashboard() {
 
     const fcfsResult = runFCFS(coloredProcesses);
     const sjfResult = runSJF(coloredProcesses);
+    const srtfResult = runSRTF(coloredProcesses);
     const priorityResult = runPriority(coloredProcesses);
+    const priorityPreemptiveResult = runPriorityPreemptive(coloredProcesses);
     const rrResult = runRoundRobin(coloredProcesses, timeQuantum);
     
-    setSimulationResults([fcfsResult, sjfResult, priorityResult, rrResult]);
+    setSimulationResults([fcfsResult, sjfResult, srtfResult, priorityResult, priorityPreemptiveResult, rrResult]);
   };
 
   return (

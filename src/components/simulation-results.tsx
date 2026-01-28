@@ -34,7 +34,7 @@ export function SimulationResults({ results }: SimulationResultsProps) {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue={results[0].algorithm}>
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 h-auto">
             {results.map((result) => (
               <TabsTrigger key={result.algorithm} value={result.algorithm} className="whitespace-normal">
                 {result.algorithm}
@@ -91,8 +91,8 @@ export function SimulationResults({ results }: SimulationResultsProps) {
                               <TableCell>{p.arrivalTime}</TableCell>
                               <TableCell>{p.burstTime}</TableCell>
                               <TableCell>{p.priority}</TableCell>
-                              <TableCell>{p.completionTime}</TableCell>
-                              <TableCell>{p.turnaroundTime}</TableCell>
+                              <TableCell>{p.completionTime?.toFixed(2)}</TableCell>
+                              <TableCell>{p.turnaroundTime?.toFixed(2)}</TableCell>
                               <TableCell>{p.waitingTime?.toFixed(2)}</TableCell>
                             </TableRow>
                           ))}

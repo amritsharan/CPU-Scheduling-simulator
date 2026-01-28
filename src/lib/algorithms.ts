@@ -132,6 +132,85 @@ export const runSJF = (processes: Process[]): SimulationResult => {
     };
 };
 
+export const runSRTF = (processes: Process[]): SimulationResult => {
+  const localProcesses = deepCopyProcesses(processes).map(p => ({ ...p, remainingTime: p.burstTime }));
+  const n = localProcesses.length;
+
+  if (n === 0) {
+    return {
+      algorithm: 'Shortest Remaining Time First (SJF Preemptive)',
+      processes: [],
+      ganttChart: [],
+      avgWaitingTime: 0,
+      avgTurnaroundTime: 0,
+      contextSwitches: 0,
+    };
+  }
+
+  const ganttChart: GanttChartEntry[] = [];
+  let currentTime = 0;
+  let completed = 0;
+  let contextSwitches = 0;
+  let lastProcessId: number | null = null;
+  const completedProcesses: Process[] = [];
+
+  while (completed < n) {
+    const available = localProcesses.filter(p => p.arrivalTime <= currentTime && p.remainingTime! > 0);
+
+    if (available.length === 0) {
+      const futureArrivals = localProcesses.filter(p => p.arrivalTime > currentTime && p.remainingTime! > 0);
+      if (futureArrivals.length > 0) {
+        const nextArrivalTime = Math.min(...futureArrivals.map(p => p.arrivalTime));
+        ganttChart.push({ processId: 'idle', processName: 'Idle', start: currentTime, end: nextArrivalTime, color: IDLE_COLOR });
+        currentTime = nextArrivalTime;
+      } else {
+        break; // No more processes to run
+      }
+      continue;
+    }
+
+    available.sort((a, b) => a.remainingTime! - b.remainingTime!);
+    const currentProcess = available[0];
+
+    if (lastProcessId !== null && lastProcessId !== currentProcess.id) {
+      contextSwitches++;
+    }
+
+    const startTime = currentTime;
+    currentTime++;
+    currentProcess.remainingTime!--;
+    
+    const lastGanttEntry = ganttChart.length > 0 ? ganttChart[ganttChart.length - 1] : null;
+    if (lastGanttEntry && lastGanttEntry.processId === currentProcess.id) {
+      lastGanttEntry.end = currentTime;
+    } else {
+      ganttChart.push({ processId: currentProcess.id, processName: currentProcess.name, start: startTime, end: currentTime, color: currentProcess.color });
+    }
+
+    lastProcessId = currentProcess.id;
+
+    if (currentProcess.remainingTime === 0) {
+      const processInList = localProcesses.find(p => p.id === currentProcess.id)!;
+      processInList.completionTime = currentTime;
+      processInList.turnaroundTime = processInList.completionTime - processInList.arrivalTime;
+      processInList.waitingTime = processInList.turnaroundTime - processInList.burstTime;
+      completed++;
+    }
+  }
+
+  const totalWaitingTime = localProcesses.reduce((acc, p) => acc + (p.waitingTime || 0), 0);
+  const totalTurnaroundTime = localProcesses.reduce((acc, p) => acc + (p.turnaroundTime || 0), 0);
+  
+  return {
+    algorithm: 'Shortest Remaining Time First (SJF Preemptive)',
+    processes: localProcesses,
+    ganttChart,
+    avgWaitingTime: totalWaitingTime / n,
+    avgTurnaroundTime: totalTurnaroundTime / n,
+    contextSwitches,
+  };
+};
+
 export const runPriority = (processes: Process[]): SimulationResult => {
     const localProcesses = deepCopyProcesses(processes);
     const n = localProcesses.length;
@@ -205,6 +284,85 @@ export const runPriority = (processes: Process[]): SimulationResult => {
     };
 };
 
+export const runPriorityPreemptive = (processes: Process[]): SimulationResult => {
+  const localProcesses = deepCopyProcesses(processes).map(p => ({ ...p, remainingTime: p.burstTime }));
+  const n = localProcesses.length;
+
+  if (n === 0) {
+    return {
+      algorithm: 'Priority (Preemptive)',
+      processes: [],
+      ganttChart: [],
+      avgWaitingTime: 0,
+      avgTurnaroundTime: 0,
+      contextSwitches: 0,
+    };
+  }
+
+  const ganttChart: GanttChartEntry[] = [];
+  let currentTime = 0;
+  let completed = 0;
+  let contextSwitches = 0;
+  let lastProcessId: number | null = null;
+
+  while (completed < n) {
+    const available = localProcesses.filter(p => p.arrivalTime <= currentTime && p.remainingTime! > 0);
+
+    if (available.length === 0) {
+      const futureArrivals = localProcesses.filter(p => p.arrivalTime > currentTime && p.remainingTime! > 0);
+      if (futureArrivals.length > 0) {
+        const nextArrivalTime = Math.min(...futureArrivals.map(p => p.arrivalTime));
+        ganttChart.push({ processId: 'idle', processName: 'Idle', start: currentTime, end: nextArrivalTime, color: IDLE_COLOR });
+        currentTime = nextArrivalTime;
+      } else {
+        break; // No more processes to run
+      }
+      continue;
+    }
+
+    available.sort((a, b) => a.priority - b.priority);
+    const currentProcess = available[0];
+
+    if (lastProcessId !== null && lastProcessId !== currentProcess.id) {
+      contextSwitches++;
+    }
+
+    const startTime = currentTime;
+    currentTime++;
+    currentProcess.remainingTime!--;
+    
+    const lastGanttEntry = ganttChart.length > 0 ? ganttChart[ganttChart.length - 1] : null;
+    if (lastGanttEntry && lastGanttEntry.processId === currentProcess.id) {
+      lastGanttEntry.end = currentTime;
+    } else {
+      ganttChart.push({ processId: currentProcess.id, processName: currentProcess.name, start: startTime, end: currentTime, color: currentProcess.color });
+    }
+
+    lastProcessId = currentProcess.id;
+
+    if (currentProcess.remainingTime === 0) {
+      const processInList = localProcesses.find(p => p.id === currentProcess.id)!;
+      processInList.completionTime = currentTime;
+      processInList.turnaroundTime = processInList.completionTime - processInList.arrivalTime;
+      processInList.waitingTime = processInList.turnaroundTime - processInList.burstTime;
+      completed++;
+    }
+  }
+
+  const totalWaitingTime = localProcesses.reduce((acc, p) => acc + (p.waitingTime || 0), 0);
+  const totalTurnaroundTime = localProcesses.reduce((acc, p) => acc + (p.turnaroundTime || 0), 0);
+  
+  return {
+    algorithm: 'Priority (Preemptive)',
+    processes: localProcesses,
+    ganttChart,
+    avgWaitingTime: totalWaitingTime / n,
+    avgTurnaroundTime: totalTurnaroundTime / n,
+    contextSwitches,
+  };
+};
+
+
 export const runRoundRobin = (processes: Process[], timeQuantum: number): SimulationResult => {
     const localProcesses = deepCopyProcesses(processes).map(p => ({ ...p, remainingTime: p.burstTime }));
     const n = localProcesses.length;
@@ -220,25 +378,23 @@ export const runRoundRobin = (processes: Process[], timeQuantum: number): Simula
         };
     }
     
-    localProcesses.sort((a, b) => a.arrivalTime - b.arrivalTime || a.id - b.id);
-    
-    const ganttChart: GanttChartEntry[] = [];
     const readyQueue: Process[] = [];
     let currentTime = 0;
     let completed = 0;
     let contextSwitches = 0;
     let lastProcessId: number | null = null;
     let processIdx = 0;
+    const allProcesses = localProcesses.sort((a,b) => a.arrivalTime - b.arrivalTime);
 
     while (completed < n) {
-        while (processIdx < n && localProcesses[processIdx].arrivalTime <= currentTime) {
-            readyQueue.push(localProcesses[processIdx]);
+        while (processIdx < n && allProcesses[processIdx].arrivalTime <= currentTime) {
+            readyQueue.push(allProcesses[processIdx]);
             processIdx++;
         }
 
         if (readyQueue.length === 0) {
             if (processIdx < n) {
-                const nextArrivalTime = localProcesses[processIdx].arrivalTime;
+                const nextArrivalTime = allProcesses[processIdx].arrivalTime;
                 if (nextArrivalTime > currentTime) {
                     ganttChart.push({ processId: 'idle', processName: 'Idle', start: currentTime, end: nextArrivalTime, color: IDLE_COLOR });
                     currentTime = nextArrivalTime;
@@ -254,17 +410,23 @@ export const runRoundRobin = (processes: Process[], timeQuantum: number): Simula
         if (lastProcessId !== null && lastProcessId !== currentProcess.id) {
             contextSwitches++;
         }
-        lastProcessId = currentProcess.id;
 
         const startTime = currentTime;
         const executionTime = Math.min(currentProcess.remainingTime!, timeQuantum);
         currentProcess.remainingTime! -= executionTime;
         currentTime += executionTime;
 
-        ganttChart.push({ processId: currentProcess.id, processName: currentProcess.name, start: startTime, end: currentTime, color: currentProcess.color });
+        if (ganttChart.length > 0 && ganttChart[ganttChart.length - 1].processId === currentProcess.id && ganttChart[ganttChart.length - 1].end === startTime) {
+            ganttChart[ganttChart.length-1].end = currentTime;
+        } else {
+            ganttChart.push({ processId: currentProcess.id, processName: currentProcess.name, start: startTime, end: currentTime, color: currentProcess.color });
+        }
         
-        while (processIdx < n && localProcesses[processIdx].arrivalTime <= currentTime) {
-            readyQueue.push(localProcesses[processIdx]);
+        while (processIdx < n && allProcesses[processIdx].arrivalTime <= currentTime) {
+            const arrivingProcess = allProcesses[processIdx];
+            if (!readyQueue.some(p => p.id === arrivingProcess.id)) {
+                readyQueue.push(arrivingProcess);
+            }
             processIdx++;
         }
 

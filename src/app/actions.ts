@@ -8,13 +8,15 @@ export async function getAiSuggestion(
   performanceCriteria: string
 ) {
   try {
-    const fcfsResult = results.find(r => r.algorithm.includes('First-Come, First-Served'));
-    const sjfResult = results.find(r => r.algorithm.includes('Shortest Job First'));
-    const priorityResult = results.find(r => r.algorithm.includes('Priority'));
-    const rrResult = results.find(r => r.algorithm.includes('Round Robin'));
+    const fcfsResult = results.find(r => r.algorithm === 'First-Come, First-Served');
+    const sjfResult = results.find(r => r.algorithm === 'Shortest Job First (Non-Preemptive)');
+    const srtfResult = results.find(r => r.algorithm === 'Shortest Remaining Time First (SJF Preemptive)');
+    const priorityResult = results.find(r => r.algorithm === 'Priority (Non-Preemptive)');
+    const priorityPreemptiveResult = results.find(r => r.algorithm === 'Priority (Preemptive)');
+    const rrResult = results.find(r => r.algorithm === 'Round Robin');
 
-    if (!fcfsResult || !sjfResult || !priorityResult || !rrResult) {
-      throw new Error("One or more simulation results are missing.");
+    if (!fcfsResult || !sjfResult || !priorityResult || !rrResult || !srtfResult || !priorityPreemptiveResult) {
+      throw new Error("One or more simulation results are missing for AI Analysis.");
     }
     
     const input: SuggestOptimalAlgorithmInput = {
@@ -22,8 +24,12 @@ export async function getAiSuggestion(
       fcfsTurnaroundTime: fcfsResult.avgTurnaroundTime,
       sjfWaitingTime: sjfResult.avgWaitingTime,
       sjfTurnaroundTime: sjfResult.avgTurnaroundTime,
+      srtfWaitingTime: srtfResult.avgWaitingTime,
+      srtfTurnaroundTime: srtfResult.avgTurnaroundTime,
       priorityWaitingTime: priorityResult.avgWaitingTime,
       priorityTurnaroundTime: priorityResult.avgTurnaroundTime,
+      priorityPreemptiveWaitingTime: priorityPreemptiveResult.avgWaitingTime,
+      priorityPreemptiveTurnaroundTime: priorityPreemptiveResult.avgTurnaroundTime,
       roundRobinWaitingTime: rrResult.avgWaitingTime,
       roundRobinTurnaroundTime: rrResult.avgTurnaroundTime,
       performanceCriteria,

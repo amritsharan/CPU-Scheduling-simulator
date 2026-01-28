@@ -34,20 +34,20 @@ export function GanttChart({ ganttChart }: GanttChartProps) {
                     <Tooltip key={index} delayDuration={0}>
                       <TooltipTrigger asChild>
                         <div
-                          className="flex items-center justify-center h-full text-sm font-bold text-white transition-all"
+                          className="flex items-center justify-center h-full text-sm font-bold text-white transition-all overflow-hidden"
                           style={{
                             width: `${duration * 3}rem`,
                             backgroundColor: entry.color,
                           }}
                         >
-                          <span className="truncate px-2">{entry.processName}</span>
+                          <span className="px-1">{entry.processName}</span>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>Process: {entry.processName}</p>
                         <p>Start: {entry.start}</p>
                         <p>End: {entry.end}</p>
-                        <p>Duration: {duration}</p>
+                        <p>Duration: {duration.toFixed(2)}</p>
                       </TooltipContent>
                     </Tooltip>
                   );
