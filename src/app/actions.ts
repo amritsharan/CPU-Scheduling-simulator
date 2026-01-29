@@ -2,6 +2,7 @@
 
 import { suggestOptimalAlgorithm, SuggestOptimalAlgorithmInput } from "@/ai/flows/suggest-optimal-algorithm";
 import { SimulationResult } from "@/lib/types";
+import htmlToDocx from 'html-to-docx';
 
 const formatResultForAI = (result: SimulationResult) => ({
   waitingTime: result.avgWaitingTime,
@@ -45,4 +46,15 @@ export async function getAiSuggestion(
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
     return { success: false, error: errorMessage };
   }
+}
+
+export async function generateDocx(htmlString: string) {
+    const fileBuffer = await htmlToDocx(htmlString, undefined, {
+      table: { row: { cantSplit: true } },
+      footer: true,
+      pageNumber: true,
+    });
+  
+    // The fileBuffer is a Buffer in Node.js environment
+    return fileBuffer.toString('base64');
 }

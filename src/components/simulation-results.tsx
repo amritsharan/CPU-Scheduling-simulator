@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { SimulationResult } from "@/lib/types";
 import { GanttChart } from "@/components/gantt-chart";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,12 +9,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ExecutionLog } from "./execution-log";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from 'jspdf-autotable';
-import htmlToDocx from 'html-to-docx';
 import { saveAs } from 'file-saver';
-import '@/lib/jspdf.d.ts';
+import { generateDocx } from "@/app/actions";
 
 
 interface SimulationResultsProps {
@@ -21,6 +21,8 @@ interface SimulationResultsProps {
 }
 
 export function SimulationResults({ results }: SimulationResultsProps) {
+  const [isDownloadingWord, setIsDownloadingWord] = useState<string | null>(null);
+
   if (results.length === 0) {
     return (
       <Card className="text-center py-12">
@@ -65,6 +67,7 @@ export function SimulationResults({ results }: SimulationResultsProps) {
   };
 
   const handleDownloadWord = async (result: SimulationResult) => {
+      setIsDownloadingWord(result.algorithm);
       const tableRows = result.processes.map(p => `
           <tr>
               <td>${p.name}</td>
@@ -119,13 +122,22 @@ export function SimulationResults({ results }: SimulationResultsProps) {
           </html>
       `;
 
-      const fileBuffer = await htmlToDocx(htmlString, undefined, {
-          table: { row: { cantSplit: true } },
-          footer: true,
-          pageNumber: true,
-      });
+      try {
+        const base64 = await generateDocx(htmlString);
+        const byteCharacters = atob(base64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
 
-      saveAs(fileBuffer as Blob, `${result.algorithm.replace(/\s+/g, '_')}_results.docx`);
+        saveAs(blob, `${result.algorithm.replace(/\s+/g, '_')}_results.docx`);
+      } catch (error) {
+        console.error("Failed to generate Word document:", error);
+      } finally {
+        setIsDownloadingWord(null);
+      }
   };
 
 
@@ -224,8 +236,8 @@ export function SimulationResults({ results }: SimulationResultsProps) {
                         <Download className="mr-2 h-4 w-4" />
                         Download as PDF
                     </Button>
-                    <Button onClick={() => handleDownloadWord(result)} variant="outline">
-                        <Download className="mr-2 h-4 w-4" />
+                    <Button onClick={() => handleDownloadWord(result)} variant="outline" disabled={isDownloadingWord === result.algorithm}>
+                        {isDownloadingWord === result.algorithm ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                         Download as Word
                     </Button>
                 </CardContent>
